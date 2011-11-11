@@ -8,6 +8,7 @@ from lxml import etree
 from StringIO import StringIO
 
 class ComtubeRuSMS(object):
+    """For an API description see https://www.comtube.com/forum/viewtopic.php?f=33&t=494&sid=e3fae4697ecd5d688feb79624176fea5"""
 
     api_base_url = "http://api.comtube.ru/scripts/sms_api/sendsms.php"
 
