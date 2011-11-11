@@ -34,11 +34,7 @@ class ComtubeRuSMS(object):
         else:
             return (code, desc)
 
-    def send(self, message):
-        params = {'username': self.user, 'to': self.mobile, 'from': self.user,
-            'message': message.decode('utf-8').encode('windows-1251')
-        }
-
+    def __sign(self, params):
         sorted_keys = sorted(list(params))
         url = ''
 
@@ -46,10 +42,19 @@ class ComtubeRuSMS(object):
             url += key + '=' + urllib.quote_plus(params[key]) + '&'
 
         signature = hashlib.md5(url + '&password=' + urllib.quote_plus(self.password)).hexdigest()
-        api_url = ComtubeRuSMS.api_base_url + '?' + url + 'signature=' + signature
+
+        return signature
+
+    def send(self, message):
+        params = {'username': self.user, 'to': self.mobile, 'from': self.user,
+            'message': message.decode('utf-8').encode('windows-1251')
+        }
+
+        params['signature'] = self.__sign(params)
+        req_data = urllib.urlencode(params)
 
         try:
-            handle = urllib2.urlopen(api_url)
+            handle = urllib2.urlopen(ComtubeRuSMS.api_base_url, req_data)
             response = handle.read()
         except Exception as e:
             (code, status_message) = (-1, "API query error: %s" % str(e))
