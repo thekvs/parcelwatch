@@ -5,8 +5,28 @@ import datetime
 import urllib2
 import urllib
 
+from StringIO import StringIO
+
+
 class RussianPostTrackingEntry(object):
-    pass
+    
+    def __init__(self, data):
+        self.op = data[0]
+        self.op_time = data[1]
+        self.postal_code = data[2]
+        self.post_office_name = data[3]
+        self.op_attr = data[4]
+        self.weight = data[5]
+        self.value = data[6]
+        self.payoff = data[7]
+        self.dest_postal_code = data[8]
+        self.dest_address = data[9]
+
+    def __repr__(self):
+        s = "%s: %s (%s, %s), %s" % (self.op_time, self.op, self.postal_code,
+            self.post_office_name, self.op_attr)
+        return s.encode('utf-8')
+
 
 class RussianPostQuery(object):
 
@@ -55,9 +75,28 @@ class RussianPostQuery(object):
 
 class RussianPostParser(object):
 
+    __xpath_expr = "//html:table[@class='pagetext']/html:tbody/html:tr[@align='center']"
+
     def __init__(self):
-        self.handle = RussianPostQuery()
-    
+        self.parser = html5lib.HTMLParser(
+            tree=html5lib.treebuilders.getTreeBuilder("lxml")
+        )
+
+    def parse(self, data):
+        document = self.parser.parse(StringIO(data))
+        table = document.xpath(RussianPostParser.__xpath_expr,
+            namespaces={'html': 'http://www.w3.org/1999/xhtml'})
+        resp = []
+        
+        for row in table:
+            data = []
+            for cell in row.getchildren():
+                data.append(cell.text)
+        
+            resp.append(RussianPostTrackingEntry(data))
+
+        return resp
+        
 
 if __name__ == "__main__":
     from optparse import OptionParser
@@ -75,3 +114,4 @@ if __name__ == "__main__":
     resp = handle.query(opts.id)
 
     print resp
+
