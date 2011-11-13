@@ -21,56 +21,19 @@ class RussianPostTrackingEntry(object):
         self.payoff = data[7]
         self.dest_postal_code = data[8]
         self.dest_address = data[9]
-
+        
     def __repr__(self):
-        s = "%s: %s (%s, %s), %s" % (self.op_time, self.op, self.postal_code,
-            self.post_office_name, self.op_attr)
+        s = ""
+        if self.op_time:
+            s += "%s: " % self.op_time
+        if self.op:
+            s += "%s " % self.op
+        if self.postal_code and self.post_office_name:
+            s += "(%s, %s)" % (self.postal_code, self.post_office_name)
+        if self.op_attr:
+            s += ", %s" % self.op_attr
+
         return s.encode('utf-8')
-
-
-class RussianPostQuery(object):
-
-    query_url = "http://russianpost.ru/resp_engine.aspx?Path=rp/servise/ru/home/postuslug/trackingpo"
-    default_query_params = {
-        "OP": "",
-        "PATHCUR": "rp/servise/ru/home/postuslug/trackingpo",
-        "PATHFROM": "",
-        "WHEREONOK": "",
-        "ASP": "",
-        "PARENTID": "",
-        "FORUMID": "",
-        "NEWSID": "",
-        "DFROM": "",
-        "DTO": "",
-        "CA": "",
-        "NAVCURPAGE": "",
-        "SEARCHTEXT": "",
-        "searchbarcode": "Найти",
-        "searchsign": "1"
-    }
-
-    def __init__(self):
-        pass
-
-    def query(self, barcode):
-        today = datetime.date.today()
-
-        params = RussianPostQuery.default_query_params
-        params["BarCode"] = barcode
-        params["CYEAR"] = str(today.year)
-        params["CMONTH"] = str(today.month)
-        params["CDAY"] = str(today.day)
-
-        response = ""
-        req_data = urllib.urlencode(params)
-
-        try:
-            handle = urllib2.urlopen(RussianPostQuery.query_url, req_data)
-            response = handle.read()
-        except Exception as e:
-            response = "Error: %s" % e
-            
-        return response
 
 
 class RussianPostParser(object):
@@ -98,6 +61,53 @@ class RussianPostParser(object):
         return resp
         
 
+class RussianPostQuery(object):
+
+    query_url = "http://russianpost.ru/resp_engine.aspx?Path=rp/servise/ru/home/postuslug/trackingpo"
+    default_query_params = {
+        "OP": "",
+        "PATHCUR": "rp/servise/ru/home/postuslug/trackingpo",
+        "PATHFROM": "",
+        "WHEREONOK": "",
+        "ASP": "",
+        "PARENTID": "",
+        "FORUMID": "",
+        "NEWSID": "",
+        "DFROM": "",
+        "DTO": "",
+        "CA": "",
+        "NAVCURPAGE": "",
+        "SEARCHTEXT": "",
+        "searchbarcode": "Найти",
+        "searchsign": "1"
+    }
+
+    def __init__(self):
+        self.parser = RussianPostParser()
+
+    def query(self, barcode):
+        today = datetime.date.today()
+
+        params = RussianPostQuery.default_query_params
+        params["BarCode"] = barcode
+        params["CYEAR"] = str(today.year)
+        params["CMONTH"] = str(today.month)
+        params["CDAY"] = str(today.day)
+
+        req_data = urllib.urlencode(params)
+
+        try:
+            handle = urllib2.urlopen(RussianPostQuery.query_url, req_data)
+            html = handle.read()
+        except Exception as e:
+            #print "Error: %s" % e
+            events = []
+        else:
+            events = self.parser.parse(html)
+            
+        return events
+
+
 if __name__ == "__main__":
     from optparse import OptionParser
 
@@ -111,7 +121,11 @@ if __name__ == "__main__":
         parser.error("Not enough args. given. Try --help switch for details.")
 
     handle = RussianPostQuery()
-    resp = handle.query(opts.id)
+    events = handle.query(opts.id)
 
-    print resp
+    if len(events) > 0:
+        for event in events:
+            print event
+    else:
+        print "No events."
 
