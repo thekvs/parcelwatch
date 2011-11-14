@@ -22,7 +22,7 @@ class RussianPostTrackingEntry(object):
         self.dest_postal_code = data[8]
         self.dest_address = data[9]
         
-    def __repr__(self):
+    def __str__(self):
         s = ""
         if self.op_time:
             s += "%s: " % self.op_time
