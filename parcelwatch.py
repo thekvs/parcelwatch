@@ -1,23 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import pickle
+import sys
 import os
 import os.path
 import tempfile
 import shutil
+import pickle
 
 from optparse import OptionParser
 
 from notifications.sms import ComtubeRuSMS
 from parsers.russianpost import RussianPostQuery
 from parsers.russianpost import RussianPostTrackingEntry
+from shell import run_shell
 
 def parse_args():
     parser = OptionParser()
 
-    parser.add_option("", "--tracking", action="store",
-        dest="tracking", help="comma separated list of tracking numbers")
+    parser.add_option("", "--shell", action="store_true",
+        dest="shell", default=False,
+        help="run parcelwatch's shell for admin tasks")
     parser.add_option("", "--data-file", action="store",
         dest="data_file", help="file to store state between checks",
         metavar="FILE")
@@ -30,30 +33,46 @@ def parse_args():
 
     opts, args = parser.parse_args()
 
-    if not (opts.tracking and opts.data_file and opts.user and \
-        opts.password and opts.mobile):
+    if opts.shell and opts.data_file:
+        return opts
+    elif not (opts.data_file and opts.user and opts.password and opts.mobile):
         parser.error("Not enough args. given. Try --help switch for details.")
 
     return opts
 
 
-def main():
-    opts = parse_args()
+def save_cache(opts, cache):
+    tmp_data_file = tempfile.NamedTemporaryFile(delete=False)
+    pickle.dump(cache, tmp_data_file)
+    shutil.move(tmp_data_file.name, opts.data_file)
 
-    new_cache = False
+
+def load_cache(opts):
+    created = False
 
     if os.path.exists(opts.data_file):
         data_file = open(opts.data_file, "r")
         cache = pickle.load(data_file)
     else:
         cache = dict()
-        new_cache = True
+        created = True
 
-    identifiers = opts.tracking.split(',')
+    return (cache, created)
+
+
+def main():
+    opts = parse_args()
+    cache, new_cache = load_cache(opts)
+
+    if opts.shell:
+        run_shell(cache)
+        save_cache(opts, cache)
+        return
+
     handle = RussianPostQuery()
     sms = ComtubeRuSMS(opts.user, opts.password, opts.mobile)
 
-    for identifier in identifiers:
+    for identifier in cache.iterkeys():
         events = handle.query(identifier.strip())
         events_count = len(events)
 
@@ -72,13 +91,11 @@ def main():
                         cached_events.append(event)
                         msg = "Отправление %s: %s" % (identifier, str(event))
                         code, status = sms.send(msg)
-            else:
+            else:       
                 cache[identifier] = events
 
-    tmp_data_file = tempfile.NamedTemporaryFile(delete=False)
-    pickle.dump(cache, tmp_data_file)
-    shutil.move(tmp_data_file.name, opts.data_file)
-
+    save_cache(opts, cache)
+    
 
 if __name__ == '__main__':
     main()
