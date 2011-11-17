@@ -48,21 +48,18 @@ def save_cache(opts, cache):
 
 
 def load_cache(opts):
-    created = False
-
     if os.path.exists(opts.data_file):
         data_file = open(opts.data_file, "r")
         cache = pickle.load(data_file)
     else:
         cache = dict()
-        created = True
 
-    return (cache, created)
+    return cache
 
 
 def main():
     opts = parse_args()
-    cache, new_cache = load_cache(opts)
+    cache = load_cache(opts)
 
     if opts.shell:
         run_shell(cache)
@@ -76,23 +73,20 @@ def main():
         events = handle.query(identifier.strip())
         events_count = len(events)
 
-        if new_cache:
+        if cache.has_key(identifier):
+            cached_events = cache[identifier]
+            cached_events_count = len(cached_events)
+            if events_count > 0 and events_count > cached_events_count:
+                new_events_count = events_count - cached_events_count
+                first = cached_events_count
+                last = cached_events_count + new_events_count
+                for idx in xrange(first, last):
+                    event = events[idx]
+                    cached_events.append(event)
+                    msg = "Отправление %s: %s" % (identifier, str(event))
+                    code, status = sms.send(msg)
+        else:       
             cache[identifier] = events
-        else:
-            if cache.has_key(identifier):
-                cached_events = cache[identifier]
-                cached_events_count = len(cached_events)
-                if events_count > 0 and events_count > cached_events_count:
-                    new_events_count = events_count - cached_events_count
-                    first = cached_events_count
-                    last = cached_events_count + new_events_count
-                    for idx in xrange(first, last):
-                        event = events[idx]
-                        cached_events.append(event)
-                        msg = "Отправление %s: %s" % (identifier, str(event))
-                        code, status = sms.send(msg)
-            else:       
-                cache[identifier] = events
 
     save_cache(opts, cache)
     
