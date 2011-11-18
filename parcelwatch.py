@@ -13,8 +13,11 @@ from optparse import OptionParser
 from ConfigParser import SafeConfigParser
 
 from notifications.sms import ComtubeRuSMS
+from notifications.email_notifier import Email
+
 from parsers.russianpost import RussianPostQuery
 from parsers.russianpost import RussianPostTrackingEntry
+
 from shell import run_shell
 
 
@@ -80,11 +83,21 @@ def main():
     if not opts.shell:
         handle = RussianPostQuery()
 
-        user = conf.get("sms", "comtube_user")
-        password = conf.get("sms", "comtube_password")
+        sms_user = conf.get("sms", "comtube_user")
+        sms_password = conf.get("sms", "comtube_password")
         mobile = conf.get("notifications", "mobile")
 
-        sms = ComtubeRuSMS(user, password, mobile)
+        sms = ComtubeRuSMS(sms_user, sms_password, mobile)
+
+        email_server = conf.get("email", "server")
+        email_user = conf.get("email", "user")
+        email_password = conf.get("email", "password")
+
+        emailto = conf.get("email", "to")
+        emailfrom = email_user
+
+        email = Email(email_server, email_user, email_password,
+            emailto, emailfrom)
 
         for identifier in cache.iterkeys():
             logging.info("processing tracking number %s", identifier)
@@ -95,17 +108,39 @@ def main():
             if cache.has_key(identifier):
                 cached_events = cache[identifier]
                 cached_events_count = len(cached_events)
+
                 if events_count > 0 and events_count > cached_events_count:
                     new_events_count = events_count - cached_events_count
                     first = cached_events_count
                     last = cached_events_count + new_events_count
+
                     for idx in xrange(first, last):
                         event = events[idx]
                         cached_events.append(event)
                         msg = "Отправление %s: %s" % (identifier, str(event))
-                        code, status = sms.send(msg)
-                        logging.info("SMS service reply: code=%d, status=%s",
-                            code, status)
+
+                        try:
+                            sms_code, sms_status = sms.send(msg)
+                        except Exception as e:
+                            logging.error("Error while sending SMS "\
+                                "notification: %s", e)
+                        else:
+                            if sms_code == 200:
+                                logging.info("SMS notification sent: "\
+                                    "code=%d, status=%s",
+                                    sms_code, sms_status)
+                            else:
+                                logging.error("Error while sending SMS "\
+                                    "notofication: code=%d, status=%s",
+                                    sms_code, sms_status)
+                            
+                        try:
+                            email.send(msg)
+                        except Exception as e:
+                            logging.error("Error while sending email "\
+                                "notification: %s", e)
+                        else:
+                            logging.info("Email notification sent")        
             else:       
                 cache[identifier] = events
     else:
