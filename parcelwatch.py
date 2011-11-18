@@ -131,7 +131,7 @@ def main():
                                     sms_code, sms_status)
                             else:
                                 logging.error("Error while sending SMS "\
-                                    "notofication: code=%d, status=%s",
+                                    "notification: code=%d, status=%s",
                                     sms_code, sms_status)
                             
                         try:
@@ -151,3 +151,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
