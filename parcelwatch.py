@@ -7,6 +7,7 @@ import os.path
 import tempfile
 import shutil
 import pickle
+import logging
 
 from optparse import OptionParser
 from ConfigParser import SafeConfigParser
@@ -15,6 +16,7 @@ from notifications.sms import ComtubeRuSMS
 from parsers.russianpost import RussianPostQuery
 from parsers.russianpost import RussianPostTrackingEntry
 from shell import run_shell
+
 
 def parse_args():
     parser = OptionParser()
@@ -58,9 +60,20 @@ def parse_config(config):
     return conf
 
 
+def init_logger(conf):
+    logfile = conf.get("logging", "file")
+    loglevel = logging.DEBUG
+
+    logging.basicConfig(filename=logfile, level=loglevel,
+        format="%(levelname)s|%(asctime)s|%(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S")
+
+
 def main():
     opts = parse_args()
     conf = parse_config(opts.config)
+
+    init_logger(conf)
 
     cache = load_cache(conf)
 
@@ -74,6 +87,8 @@ def main():
         sms = ComtubeRuSMS(user, password, mobile)
 
         for identifier in cache.iterkeys():
+            logging.info("processing tracking number %s", identifier)
+
             events = handle.query(identifier.strip())
             events_count = len(events)
 
@@ -89,6 +104,8 @@ def main():
                         cached_events.append(event)
                         msg = "Отправление %s: %s" % (identifier, str(event))
                         code, status = sms.send(msg)
+                        logging.info("SMS service reply: code=%d, status=%s",
+                            code, status)
             else:       
                 cache[identifier] = events
     else:
