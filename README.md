@@ -9,37 +9,37 @@
 ## Конфигурационный файл.
 
 Конфигурационный файл состоит из нескольких секций, в каждой из которых содержится один или более параметров.
-<pre>
-[notifications]
-# email куда посылать уведомления
-email = ...
-# Мобильный в международном формате, т.е. например 79101234567
-mobile = ...
-
-[sms]
-# login на сервисе Comtube
-comtube_user = ...
-# пароль на сервисе Comtube
-comtube_password = ...
-
-[email]
-# сервер, через который отсылать email уведомления
-server = smtp.mail.ru
-# пользователь для авторизации на данном сервисе
-user = ...@mail.ru
-# пароль пользователя
-password = ...
-# email куда отсылать уведомления
-to = ...
-
-[status]
-# файл для сохранения результатов предыдущих проверок
-file = /home/kvs/work/devel/parcelwatch/parcelwatch.data
-
-[logging]
-# лог файл
-file = /tmp/parcelwatch.log
-</pre>
+    
+    [notifications]
+    # email куда посылать уведомления
+    email = ...
+    # Мобильный в международном формате, т.е. например 79101234567
+    mobile = ...
+    
+    [sms]
+    # login на сервисе Comtube
+    comtube_user = ...
+    # пароль на сервисе Comtube
+    comtube_password = ...
+    
+    [email]
+    # сервер, через который отсылать email уведомления
+    server = smtp.mail.ru
+    # пользователь для авторизации на данном сервисе
+    user = ...@mail.ru
+    # пароль пользователя
+    password = ...
+    # email куда отсылать уведомления
+    to = ...
+    
+    [status]
+    # файл для сохранения результатов предыдущих проверок
+    file = /home/kvs/work/devel/parcelwatch/parcelwatch.data
+    
+    [logging]
+    # лог файл
+    file = /tmp/parcelwatch.log
+    
 
 ## Шелл.
 
