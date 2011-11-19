@@ -8,6 +8,7 @@ import tempfile
 import shutil
 import pickle
 import logging
+import traceback
 
 from optparse import OptionParser
 from ConfigParser import SafeConfigParser
@@ -72,12 +73,7 @@ def init_logger(conf):
         datefmt="%Y-%m-%d %H:%M:%S")
 
 
-def main():
-    opts = parse_args()
-    conf = parse_config(opts.config)
-
-    init_logger(conf)
-
+def main(opts, conf):
     cache = load_cache(conf)
 
     if not opts.shell:
@@ -117,6 +113,7 @@ def main():
                     for idx in xrange(first, last):
                         event = events[idx]
                         cached_events.append(event)
+
                         msg = "Отправление %s: %s" % (identifier, str(event))
 
                         try:
@@ -150,5 +147,13 @@ def main():
     
 
 if __name__ == '__main__':
-    main()
+    try:
+        opts = parse_args()
+        conf = parse_config(opts.config)
+
+        init_logger(conf)
+        main(opts, conf)
+    except Exception as e:
+        trace = traceback.format_exc()
+        logging.error("%s\n%s\n", e, trace)
 
