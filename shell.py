@@ -62,8 +62,8 @@ def verify_barcode(barcode):
 
 
 def run_show_cmd(cache):
-    for num, key in enumerate(cache.iterkeys()):
-        print "  #%i:    %s" % (num, key)
+    for index, key in enumerate(cache.iterkeys()):
+        print "  #%i:    %s" % (index, key)
 
 
 def run_add_cmd(cache, barcode):
@@ -77,55 +77,67 @@ def run_add_cmd(cache, barcode):
 
 
 def run_delete_cmd(cache, number):
-    num = int(number)
-    if num < 0 or num > len(cache):
-        print "Error: invalid index number %s" % number
+    try:
+        index = int(number)
+    except Exception as e:
+        print "Error: couldn't convert %s to integer" % number
     else:
-        keys = cache.keys()
-        del cache[keys[num]]
-        print "Ok"
+        if index < 0 or index > len(cache):
+            print "Error: invalid index number %s" % number
+        else:
+            keys = cache.keys()
+            del cache[keys[index]]
+            print "Ok"
 
 
 def run_tracking_cmd(cache, number):
-    num = int(number)
-    barcodes = cache.keys()
-    if num < 0 or num > len(barcodes):
-        print "Error: invalid index %s" % number
+    try:
+        index = int(number)
+    except Exception as e:
+        print "Error: couldn't convert %s to integer" % number
     else:
-        barcode = barcodes[num]
-        if verify_barcode(barcode):
-            if cache.has_key(barcode):
-                ctx = cache[barcode]
-                global level
-                level = 1
-
-                while True:
-                    try:
-                        input_data = raw_input("  " + barcode + "# ")
-                        if len(input_data) == 0: continue
-                        parse_and_exec(input_data, ctx)
-                    except EOFError:
-                        print
-                        break
-                
-                level = 0
-            else:
-                print "Error: tracking number %s is not registered" % barcode
+        barcodes = cache.keys()
+        if index < 0 or index > len(barcodes):
+            print "Error: invalid index %s" % number
         else:
-            print "Error: invalid tracking number"
+            barcode = barcodes[index]
+            if verify_barcode(barcode):
+                if cache.has_key(barcode):
+                    ctx = cache[barcode]
+                    global level
+                    level = 1
+
+                    while True:
+                        try:
+                            input_data = raw_input("  " + barcode + "# ")
+                            if len(input_data) == 0: continue
+                            parse_and_exec(input_data, ctx)
+                        except EOFError:
+                            print
+                            break
+                    
+                    level = 0
+                else:
+                    print "Error: tracking number %s is not registered" % barcode
+            else:
+                print "Error: invalid tracking number"
 
 
 def run_show_events_cmd(events):
-    for num, event in enumerate(events):
-        print "    #%i: %s" % (num, event)
+    for index, event in enumerate(events):
+        print "    #%i: %s" % (index, event)
 
 
 def run_delete_event_cmd(events, number):
-    num = int(number)
-    if len(events) == 0 or num < 0 or num >= len(events):
-        print "Error: invalid index %s" % number
+    try:
+        index = int(number)
+    except Exception as e:
+        print "Error: couldn't convert %s to integer" % number
     else:
-        del events[num]
+        if len(events) == 0 or index < 0 or index >= len(events):
+            print "Error: invalid index %s" % number
+        else:
+            del events[index]
 
 
 def run_shell(cache):    
