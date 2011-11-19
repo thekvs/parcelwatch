@@ -68,22 +68,22 @@ def run_show_cmd(cache):
 
 def run_add_cmd(cache, barcode):
     if cache.has_key(barcode):
-        print "Error: tracking number %s already exists" % barcode
+        print "Error: tracking number \"%s\" already exists" % barcode
     elif verify_barcode(barcode):
         cache[barcode] = []
         print "Ok"
     else:
-        print "Error: invalid tracking number %s format" % barcode
+        print "Error: invalid tracking number \"%s\" format" % barcode
 
 
 def run_delete_cmd(cache, number):
     try:
         index = int(number)
     except Exception as e:
-        print "Error: couldn't convert %s to integer" % number
+        print "Error: couldn't convert \"%s\" to integer" % number
     else:
-        if index < 0 or index > len(cache):
-            print "Error: invalid index number %s" % number
+        if index < 0 or index >= len(cache):
+            print "Error: invalid index %i" % index
         else:
             keys = cache.keys()
             del cache[keys[index]]
@@ -94,11 +94,11 @@ def run_tracking_cmd(cache, number):
     try:
         index = int(number)
     except Exception as e:
-        print "Error: couldn't convert %s to integer" % number
+        print "Error: couldn't convert \"%s\" to integer" % number
     else:
         barcodes = cache.keys()
-        if index < 0 or index > len(barcodes):
-            print "Error: invalid index %s" % number
+        if index < 0 or index >= len(barcodes):
+            print "Error: invalid index %i" % index
         else:
             barcode = barcodes[index]
             if verify_barcode(barcode):
@@ -118,9 +118,9 @@ def run_tracking_cmd(cache, number):
                     
                     level = 0
                 else:
-                    print "Error: tracking number %s is not registered" % barcode
+                    print "Error: tracking number \"%s\" is not registered" % barcode
             else:
-                print "Error: invalid tracking number"
+                print "Error: invalid tracking number \"%s\" format" % barcode
 
 
 def run_show_events_cmd(events):
@@ -132,10 +132,10 @@ def run_delete_event_cmd(events, number):
     try:
         index = int(number)
     except Exception as e:
-        print "Error: couldn't convert %s to integer" % number
+        print "Error: couldn't convert \"%s\" to integer" % number
     else:
         if len(events) == 0 or index < 0 or index >= len(events):
-            print "Error: invalid index %s" % number
+            print "Error: invalid index %i" % index
         else:
             del events[index]
 
