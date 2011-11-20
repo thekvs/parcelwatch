@@ -13,7 +13,7 @@ import traceback
 from optparse import OptionParser
 from ConfigParser import SafeConfigParser
 
-from notifications.sms import ComtubeRuSMS
+from notifications.sms_notifier import ComtubeRuSMS
 from notifications.email_notifier import Email
 
 from parsers.russianpost import RussianPostQuery
