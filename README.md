@@ -45,6 +45,7 @@ This program is mainly intended for the Russian speaking users (users of [Russia
     
     $ ./parcelwatch --config=/path/to/config/parcelwatch.cfg --shell
     
+Шелл поддерживает автодополнения комманд, полный список поддерживаемых команд на данном уровне можно посмотреть нажав клавишу tab.
 
 Пример сессии:
     
