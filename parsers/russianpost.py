@@ -96,14 +96,9 @@ class RussianPostQuery(object):
 
         req_data = urllib.urlencode(params)
 
-        try:
-            handle = urllib2.urlopen(RussianPostQuery.query_url, req_data)
-            html = handle.read()
-        except Exception as e:
-            #print "Error: %s" % e
-            events = []
-        else:
-            events = self.parser.parse(html)
+        handle = urllib2.urlopen(RussianPostQuery.query_url, req_data)
+        html = handle.read()    
+        events = self.parser.parse(html)
             
         return events
 
