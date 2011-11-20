@@ -13,17 +13,13 @@ This program is mainly intended for the Russian speaking users (users of Russian
 
 Конфигурационный файл состоит из нескольких секций, в каждой из которых содержится один или более параметров.
     
-    [notifications]
-    # email куда посылать уведомления
-    email = ...
-    # Мобильный в международном формате, т.е. например 79101234567
-    mobile = ...
-    
     [sms]
     # login на сервисе Comtube
     comtube_user = ...
     # пароль на сервисе Comtube
     comtube_password = ...
+    # Мобильный в международном формате, т.е. например 79101234567
+    mobile = ...
     
     [email]
     # сервер, через который отсылать email уведомления
@@ -32,7 +28,7 @@ This program is mainly intended for the Russian speaking users (users of Russian
     user = ...@mail.ru
     # пароль пользователя
     password = ...
-    # email куда отсылать уведомления
+    # email куда посылать уведомления
     to = ...
     
     [status]

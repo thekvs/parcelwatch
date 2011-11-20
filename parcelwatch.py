@@ -81,19 +81,18 @@ def main(opts, conf):
 
         sms_user = conf.get("sms", "comtube_user")
         sms_password = conf.get("sms", "comtube_password")
-        mobile = conf.get("notifications", "mobile")
+        mobile = conf.get("sms", "mobile")
 
         sms = ComtubeRuSMS(sms_user, sms_password, mobile)
 
         email_server = conf.get("email", "server")
         email_user = conf.get("email", "user")
         email_password = conf.get("email", "password")
-
-        emailto = conf.get("email", "to")
-        emailfrom = email_user
+        email_to = conf.get("email", "to")
+        email_from = email_user
 
         email = Email(email_server, email_user, email_password,
-            emailto, emailfrom)
+            email_to, email_from)
 
         for identifier in cache.iterkeys():
             logging.info("processing tracking number %s", identifier)
