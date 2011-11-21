@@ -4,6 +4,7 @@ import html5lib
 import datetime
 import urllib2
 import urllib
+import re
 
 from StringIO import StringIO
 
@@ -38,25 +39,37 @@ class RussianPostTrackingEntry(object):
 
 class RussianPostParser(object):
 
-    __xpath_expr = "//html:table[@class='pagetext']/html:tbody/html:tr[@align='center']"
+    get_statuses_xpath_expr = "//html:table[@class='pagetext']/html:tbody/html:tr[@align='center']"
 
     def __init__(self):
         self.parser = html5lib.HTMLParser(
             tree=html5lib.treebuilders.getTreeBuilder("lxml")
         )
 
-    def parse(self, data):
+    def __empty_search_results(self, data, barcode):
+        rx_str = "К сожалению, информация о почтовом отправлении с номером %s не найдена." % barcode
+        rx = re.compile(rx_str, re.IGNORECASE)
+
+        if rx.search(data):
+            return True
+        else:
+            return False
+
+    def parse(self, data, barcode):
         document = self.parser.parse(StringIO(data))
-        table = document.xpath(RussianPostParser.__xpath_expr,
+        table = document.xpath(RussianPostParser.get_statuses_xpath_expr,
             namespaces={'html': 'http://www.w3.org/1999/xhtml'})
         resp = []
-        
-        for row in table:
-            data = []
-            for cell in row.getchildren():
-                data.append(cell.text)
-        
-            resp.append(RussianPostTrackingEntry(data))
+
+        if len(table) > 0:
+            for row in table:
+                data = []
+                for cell in row.getchildren():
+                    data.append(cell.text)
+            
+                resp.append(RussianPostTrackingEntry(data))
+        elif not self.__empty_search_results(data, barcode):
+            raise Exception("Unexpected HTML structure while quering for barcode %s" % barcode)
 
         return resp
         
@@ -98,12 +111,15 @@ class RussianPostQuery(object):
 
         handle = urllib2.urlopen(RussianPostQuery.query_url, req_data)
         html = handle.read()    
-        events = self.parser.parse(html)
+        events = self.parser.parse(html, barcode)
             
         return events
 
 
 if __name__ == "__main__":
+    import sys
+    import traceback
+
     from optparse import OptionParser
 
     parser = OptionParser()
@@ -115,12 +131,16 @@ if __name__ == "__main__":
     if not opts.id:
         parser.error("Not enough args. given. Try --help switch for details.")
 
-    handle = RussianPostQuery()
-    events = handle.query(opts.id)
+    try:
+        handle = RussianPostQuery()
+        events = handle.query(opts.id)
 
-    if len(events) > 0:
-        for event in events:
-            print event
-    else:
-        print "No events."
+        if len(events) > 0:
+            for event in events:
+                print event
+        else:
+            print "No events."
+    except Exception as e:
+        trace = traceback.format_exc()
+        print >>sys.stderr, "Oops: %s\n==============\n%s" % (e, trace)
 
