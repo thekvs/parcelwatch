@@ -43,7 +43,7 @@ This program is mainly intended for the Russian speaking users (users of [Russia
 
 Для управления номерами (т.н. tracking numbers) отслеживания используется shell-оподобный интерфейс, который запускается при использовании опции `--shell`:
     
-    $ ./parcelwatch --config=/path/to/config/parcelwatch.cfg --shell
+    $ ./parcelwatch.py --config=/path/to/config/parcelwatch.cfg --shell
     
 Шелл поддерживает автодополнения комманд, полный список поддерживаемых команд на данном уровне можно посмотреть нажав клавишу tab.
 
