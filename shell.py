@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import readline
+import re
 
 values = [['show', 'add', 'delete', 'tracking'], ['show', 'delete']]
+
+internal_tracking_vrf_rx = re.compile("^\d{14}$")
+international_tracking_vrf_rx = re.compile("^[A-Z]{2}\d{9}[A-Z]{2}$")
 
 
 def completer(text, state):
@@ -57,8 +61,12 @@ def parse_and_exec(input_data, ctx):
 
 
 def verify_barcode(barcode):
-    # TODO
-    return True
+    if international_tracking_vrf_rx.search(barcode):
+        return True
+    elif internal_tracking_vrf_rx.search(barcode):
+        return True
+    else:
+        return False
 
 
 def run_show_cmd(cache):
