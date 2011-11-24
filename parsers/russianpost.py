@@ -4,6 +4,7 @@ import html5lib
 import datetime
 import urllib2
 import urllib
+import zlib
 import re
 
 from StringIO import StringIO
@@ -35,6 +36,12 @@ class RussianPostTrackingEntry(object):
             s += ", %s" % self.op_attr
 
         return s.encode('utf-8')
+
+    def __hash__(self):
+        return zlib.crc32(str(self))
+
+    def __eq__(self, other):
+        return (hash(self) == hash(other))
 
 
 class RussianPostParser(object):

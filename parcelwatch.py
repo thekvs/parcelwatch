@@ -94,51 +94,42 @@ def main(opts, conf):
         email = Email(email_server, email_user, email_password,
             email_to, email_from)
 
-        for identifier in cache.iterkeys():
+        for identifier, cached_events in cache.items():
             logging.info("processing tracking number %s", identifier)
 
             events = handle.query(identifier.strip())
-            events_count = len(events)
+            if not events: continue
 
-            if cache.has_key(identifier):
-                cached_events = cache[identifier]
-                cached_events_count = len(cached_events)
+            new_events = set(events) - set(cached_events)
+            if not new_events: continue
 
-                if events_count > 0 and events_count > cached_events_count:
-                    new_events_count = events_count - cached_events_count
-                    first = cached_events_count
-                    last = cached_events_count + new_events_count
+            for event in new_events:
+                msg = "Отправление %s: %s" % (identifier, str(event))
 
-                    for idx in xrange(first, last):
-                        event = events[idx]
-                        cached_events.append(event)
-
-                        msg = "Отправление %s: %s" % (identifier, str(event))
-
-                        try:
-                            sms_code, sms_status = sms.send(msg)
-                        except Exception as e:
-                            logging.error("Error while sending SMS "\
-                                "notification: %s", e)
-                        else:
-                            if sms_code == 200:
-                                logging.info("SMS notification sent: "\
-                                    "code=%d, status=%s",
-                                    sms_code, sms_status)
-                            else:
-                                logging.error("Error while sending SMS "\
-                                    "notification: code=%d, status=%s",
-                                    sms_code, sms_status)
-                            
-                        try:
-                            email.send(msg)
-                        except Exception as e:
-                            logging.error("Error while sending email "\
-                                "notification: %s", e)
-                        else:
-                            logging.info("Email notification sent")        
-            else:       
-                cache[identifier] = events
+                try:
+                    sms_code, sms_status = sms.send(msg)
+                except Exception as e:
+                    logging.error("Error while sending SMS "\
+                        "notification: %s", e)
+                else:
+                    if sms_code == 200:
+                        logging.info("SMS notification sent: "\
+                            "code=%d, status=%s",
+                            sms_code, sms_status)
+                    else:
+                        logging.error("Error while sending SMS "\
+                            "notification: code=%d, status=%s",
+                            sms_code, sms_status)
+                    
+                try:
+                    email.send(msg)
+                except Exception as e:
+                    logging.error("Error while sending email "\
+                        "notification: %s", e)
+                else:
+                    logging.info("Email notification sent")
+            
+            cache[identifier] = events
     else:
         run_shell(cache)
 
