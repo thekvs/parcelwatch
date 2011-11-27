@@ -3,7 +3,9 @@
 import readline
 import re
 
-values = [['show', 'add', 'delete', 'tracking'], ['show', 'delete']]
+from tracking_data import TrackingData
+
+values = [['show', 'add', 'delete', 'tracking'], ['show', 'delete', 'desc']]
 
 internal_tracking_vrf_rx = re.compile("^\d{14}$")
 international_tracking_vrf_rx = re.compile("^[A-Z]{2}\d{9}[A-Z]{2}$")
@@ -36,11 +38,12 @@ def parse_and_exec_0(command, arg, ctx):
 
 
 def parse_and_exec_1(command, arg, ctx):
-    events = ctx
     if command == 'show':
-        run_show_events_cmd(events)
+        run_show_events_cmd(ctx)
     elif command == 'delete' and arg:
-        run_delete_event_cmd(events, arg)
+        run_delete_event_cmd(ctx, arg)
+    elif command == 'desc':
+        run_desc_event_cmd(ctx, arg)
     else:
         print "(1) Error: unknown command and arg: (%s, %s)" % (command, arg)
 
@@ -50,7 +53,10 @@ def parse_and_exec(input_data, ctx):
     command = parts[0].lower()
 
     if len(parts) > 1:
-        arg = parts[1]
+        if len(parts) > 2:
+            arg = ' '.join(parts[1:])
+        else:
+            arg = parts[1]
     else:
         arg = None
 
@@ -70,15 +76,21 @@ def verify_barcode(barcode):
 
 
 def run_show_cmd(cache):
-    for index, key in enumerate(cache.iterkeys()):
-        print "  #%i:    %s" % (index, key)
+    index = 0
+    for key, value in cache.iteritems():
+        s = "  #%i:%18s" % (index, key)
+        desc = value.description()
+        if desc:
+            s += " -- %s" % desc
+        print s
+        index += 1
 
 
 def run_add_cmd(cache, barcode):
     if cache.has_key(barcode):
         print "Error: tracking number \"%s\" already exists" % barcode
     elif verify_barcode(barcode):
-        cache[barcode] = []
+        cache[barcode] = TrackingData()
         print "Ok"
     else:
         print "Error: invalid tracking number \"%s\" format" % barcode
@@ -108,44 +120,43 @@ def run_tracking_cmd(cache, number):
         if index < 0 or index >= len(barcodes):
             print "Error: invalid index %i" % index
         else:
-            barcode = barcodes[index]
-            if verify_barcode(barcode):
-                if cache.has_key(barcode):
-                    ctx = cache[barcode]
-                    global level
-                    level = 1
+            barcode = barcodes[index]    
+            ctx = cache[barcode]
+            global level
+            level = 1
 
-                    while True:
-                        try:
-                            input_data = raw_input("  " + barcode + "# ")
-                            if len(input_data) == 0: continue
-                            parse_and_exec(input_data, ctx)
-                        except EOFError:
-                            print
-                            break
-                    
-                    level = 0
-                else:
-                    print "Error: tracking number \"%s\" is not registered" % barcode
-            else:
-                print "Error: invalid tracking number \"%s\" format" % barcode
-
-
-def run_show_events_cmd(events):
-    for index, event in enumerate(events):
+            while True:
+                try:
+                    input_data = raw_input("  " + barcode + "# ")
+                    if len(input_data) == 0: continue
+                    parse_and_exec(input_data, ctx)
+                except EOFError:
+                    print
+                    break
+            
+            level = 0
+            
+            
+def run_show_events_cmd(ctx):
+    for index, event in enumerate(ctx.events):
         print "    #%i: %s" % (index, event)
 
 
-def run_delete_event_cmd(events, number):
+def run_delete_event_cmd(ctx, number):
     try:
         index = int(number)
     except Exception as e:
         print "Error: couldn't convert \"%s\" to integer" % number
     else:
-        if len(events) == 0 or index < 0 or index >= len(events):
+        if len(ctx.events) == 0 or index < 0 or index >= len(ctx.events):
             print "Error: invalid index %i" % index
         else:
-            del events[index]
+            del ctx.events[index]
+
+
+def run_desc_event_cmd(ctx, desc):
+    ctx.desc = desc
+    print "  Ok"
 
 
 def run_shell(cache):    

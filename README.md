@@ -92,8 +92,22 @@ This program is mainly intended for the Russian speaking users (users of [Russia
       #1:    RAYYYYYYYYYCN
     parcelwatch>
     
+Номерам отслеживания можно присваивать метки. Пример:
 
-## Пример использования.
+    parcelwatch> add 14XXXXXXXXXX41
+    Ok
+    parcelwatch> show 
+      #0:    14XXXXXXXXXX41
+    parcelwatch> tracking 0
+      14XXXXXXXXXX41# desc Подарки родственникам
+      Ok
+      14XXXXXXXXXX41# 
+    parcelwatch> show 
+      #0:    14XXXXXXXXXX41 -- [Подарки родственникам]
+    parcelwatch> 
+
+
+## Пример использования из cron.
 
 Я использую через cron, мой crontab выглядит следующим образом:
     

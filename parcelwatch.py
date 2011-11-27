@@ -35,7 +35,7 @@ def parse_args():
     opts, args = parser.parse_args()
 
     if not opts.config:
-        parser.error("Not enough args. given. Try --help switch for details.")
+        parser.error("Not enough args. given. Try --help for details.")
 
     return opts
 
@@ -73,6 +73,31 @@ def init_logger(conf):
         datefmt="%Y-%m-%d %H:%M:%S")
 
 
+def send_notifications(sms, email, msg):
+    try:
+        sms_code, sms_status = sms.send(msg)
+    except Exception as e:
+        logging.error("Error while sending SMS "\
+            "notification: %s", e)
+    else:
+        if sms_code == 200:
+            logging.info("SMS notification sent: "\
+                "code=%d, status=%s",
+                sms_code, sms_status)
+        else:
+            logging.error("Error while sending SMS "\
+                "notification: code=%d, status=%s",
+                sms_code, sms_status)
+        
+    try:
+        email.send(msg)
+    except Exception as e:
+        logging.error("Error while sending email "\
+            "notification: %s", e)
+    else:
+        logging.info("Email notification sent")
+
+
 def main(opts, conf):
     cache = load_cache(conf)
 
@@ -94,42 +119,25 @@ def main(opts, conf):
         email = Email(email_server, email_user, email_password,
             email_to, email_from)
 
-        for identifier, cached_events in cache.items():
+        for identifier, tracking_data in cache.items():
             logging.info("processing tracking number %s", identifier)
 
             events = handle.query(identifier.strip())
             if not events: continue
 
-            new_events = set(events) - set(cached_events)
+            new_events = set(events) - set(tracking_data.events)
             if not new_events: continue
 
             for event in new_events:
-                msg = "Отправление %s: %s" % (identifier, str(event))
+                if tracking_data.desc:
+                    msg = "Отправление %s [%s]: %s" % \
+                        (identifier, tracking_data.desc, str(event))
+                else:
+                    msg = "Отправление %s: %s" % (identifier, str(event))
 
-                try:
-                    sms_code, sms_status = sms.send(msg)
-                except Exception as e:
-                    logging.error("Error while sending SMS "\
-                        "notification: %s", e)
-                else:
-                    if sms_code == 200:
-                        logging.info("SMS notification sent: "\
-                            "code=%d, status=%s",
-                            sms_code, sms_status)
-                    else:
-                        logging.error("Error while sending SMS "\
-                            "notification: code=%d, status=%s",
-                            sms_code, sms_status)
-                    
-                try:
-                    email.send(msg)
-                except Exception as e:
-                    logging.error("Error while sending email "\
-                        "notification: %s", e)
-                else:
-                    logging.info("Email notification sent")
+                send_notifications(sms, email, msg)
             
-            cache[identifier] = events
+            cache[identifier].events = events
     else:
         run_shell(cache)
 
