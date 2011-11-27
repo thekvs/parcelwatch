@@ -25,12 +25,15 @@ from shell import run_shell
 def parse_args():
     parser = OptionParser()
 
-    parser.add_option("", "--shell", action="store_true",
-        dest="shell", default=False,
-        help="run parcelwatch's shell for admin tasks")
     parser.add_option("", "--config", action="store",
         dest="config", help="configuration file",
         metavar="FILE")
+    parser.add_option("", "--shell", action="store_true",
+        dest="shell", default=False,
+        help="run parcelwatch's shell for admin tasks")
+    parser.add_option("", "--disable-alerts", action="store_true",
+        dest="disable_alerts", default=False,
+        help="don't send notifications via SMS or email about status change")
     
     opts, args = parser.parse_args()
 
@@ -128,6 +131,9 @@ def main(opts, conf):
             new_events = set(events) - set(tracking_data.events)
             if not new_events: continue
 
+            cache[identifier].events = events
+            if opts.disable_alerts: continue
+
             for event in new_events:
                 if tracking_data.desc:
                     msg = "Отправление %s [%s]: %s" % \
@@ -136,8 +142,6 @@ def main(opts, conf):
                     msg = "Отправление %s: %s" % (identifier, str(event))
 
                 send_notifications(sms, email, msg)
-            
-            cache[identifier].events = events
     else:
         run_shell(cache)
 
