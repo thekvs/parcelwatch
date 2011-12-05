@@ -10,6 +10,7 @@ import pickle
 import logging
 import traceback
 
+from urllib2 import URLError
 from optparse import OptionParser
 from ConfigParser import SafeConfigParser
 
@@ -123,25 +124,28 @@ def main(opts, conf):
             email_to, email_from)
 
         for identifier, tracking_data in cache.items():
-            logging.info("processing tracking number %s", identifier)
+            try:
+                events = handle.query(identifier.strip())
+                if not events: continue
+            except URLError as e:
+                logging.error("tracking number %s: %s", identifier, e)
+            else:
+                logging.info("processed tracking number %s", identifier)
+                
+                new_events = set(events) - set(tracking_data.events)
+                if not new_events: continue
 
-            events = handle.query(identifier.strip())
-            if not events: continue
+                cache[identifier].events = events
+                if opts.disable_alerts: continue
 
-            new_events = set(events) - set(tracking_data.events)
-            if not new_events: continue
+                for event in new_events:
+                    if tracking_data.desc:
+                        msg = "Отправление %s [%s]: %s" % \
+                            (identifier, tracking_data.desc, str(event))
+                    else:
+                        msg = "Отправление %s: %s" % (identifier, str(event))
 
-            cache[identifier].events = events
-            if opts.disable_alerts: continue
-
-            for event in new_events:
-                if tracking_data.desc:
-                    msg = "Отправление %s [%s]: %s" % \
-                        (identifier, tracking_data.desc, str(event))
-                else:
-                    msg = "Отправление %s: %s" % (identifier, str(event))
-
-                send_notifications(sms, email, msg)
+                    send_notifications(sms, email, msg)
     else:
         run_shell(cache)
 
