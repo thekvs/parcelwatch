@@ -104,7 +104,7 @@ def send_notifications(sms, email, msg):
 
 
 def main(opts, conf):
-    package_delivered_rx = re.compile("вручение", re.IGNORECASE)
+    package_delivered_rx = re.compile("Вручение")
     cache = load_cache(conf)
 
     if not opts.shell:
