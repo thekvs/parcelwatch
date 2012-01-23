@@ -9,6 +9,7 @@ import shutil
 import pickle
 import logging
 import traceback
+import re
 
 from urllib2 import URLError
 from optparse import OptionParser
