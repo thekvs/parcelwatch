@@ -103,6 +103,7 @@ def send_notifications(sms, email, msg):
 
 
 def main(opts, conf):
+    package_delivered_rx = re.compile("вручение", re.IGNORECASE)
     cache = load_cache(conf)
 
     if not opts.shell:
@@ -122,16 +123,16 @@ def main(opts, conf):
 
         email = Email(email_server, email_user, email_password,
             email_to, email_from)
+        delivered = set()
 
         for identifier, tracking_data in cache.items():
             try:
                 events = handle.query(identifier.strip())
+                logging.info("processing tracking number %s", identifier)
                 if not events: continue
             except URLError as e:
                 logging.error("tracking number %s: %s", identifier, e)
             else:
-                logging.info("processed tracking number %s", identifier)
-                
                 new_events = set(events) - set(tracking_data.events)
                 if not new_events: continue
 
@@ -146,6 +147,14 @@ def main(opts, conf):
                         msg = "Отправление %s: %s" % (identifier, str(event))
 
                     send_notifications(sms, email, msg)
+
+                    if package_delivered_rx.search(msg):
+                        delivered.add(identifier)
+
+        for identifier in delivered:
+            del cache[identifier]
+            logging.info("package %s is delivered, removing it from monitoring",
+                identifier)
     else:
         run_shell(cache)
 
