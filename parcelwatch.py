@@ -122,6 +122,8 @@ def main(opts, conf):
         email_to = conf.get("email", "to")
         email_from = email_user
 
+        delete_delivered = conf.getboolean("misc", "autodelete_delivered")
+
         email = Email(email_server, email_user, email_password,
             email_to, email_from)
         delivered = set()
@@ -149,13 +151,13 @@ def main(opts, conf):
 
                     send_notifications(sms, email, msg)
 
-                    if package_delivered_rx.search(msg):
+                    if delete_delivered and package_delivered_rx.search(msg):
                         delivered.add(identifier)
 
         for identifier in delivered:
+            logging.info("package %s is delivered, removing" \
+                " it from the monitoring", identifier)
             del cache[identifier]
-            logging.info("package %s is delivered, removing it from monitoring",
-                identifier)
     else:
         run_shell(cache)
 

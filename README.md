@@ -10,7 +10,7 @@ This program is mainly intended for the Russian speaking users (users of [Russia
 
 ## Конфигурационный файл.
 
-Конфигурационный файл состоит из нескольких секций, в каждой из которых содержится один или более параметров.
+Конфигурационный файл состоит из нескольких секций, в каждой из которых содержится один или более параметров. Все параметры являются обязательными.
     
     [sms]
     # login на сервисе Comtube
@@ -37,6 +37,11 @@ This program is mainly intended for the Russian speaking users (users of [Russia
     [logging]
     # лог файл
     file = /tmp/parcelwatch.log
+
+    [misc]
+    # Может принимать значения true или false и определяет
+    # удалять ли из мониторинга доставленные посылки
+    autodelete_delivered = ...
     
 
 ## Шелл.
