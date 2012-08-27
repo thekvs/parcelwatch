@@ -5,6 +5,7 @@ import datetime
 import urllib2
 import urllib
 import zlib
+import sys
 import re
 
 from StringIO import StringIO
@@ -76,14 +77,20 @@ class RussianPostParser(object):
             
                 resp.append(RussianPostTrackingEntry(data))
         elif not self.__empty_search_results(data, barcode):
+            #print >> sys.stderr, data
             raise Exception("Unexpected HTML structure while quering for barcode %s" % barcode)
 
         return resp
-        
+
+    def parse_keyform(self, data):
+        document = self.parser.parse(StringIO(data))
+        return document.xpath("//html:input[@name='key']",
+            namespaces={'html': 'http://www.w3.org/1999/xhtml'})[0].attrib['value']
+
 
 class RussianPostQuery(object):
 
-    query_url = "http://russianpost.ru/resp_engine.aspx?Path=rp/servise/ru/home/postuslug/trackingpo"
+    query_url = "http://www.russianpost.ru/resp_engine.aspx?Path=rp/servise/ru/home/postuslug/trackingpo"
     default_query_params = {
         "OP": "",
         "PATHCUR": "rp/servise/ru/home/postuslug/trackingpo",
@@ -98,8 +105,14 @@ class RussianPostQuery(object):
         "CA": "",
         "NAVCURPAGE": "",
         "SEARCHTEXT": "",
-        "searchbarcode": "Найти",
-        "searchsign": "1"
+        #"searchbarcode": "Найти",
+        "searchsign": "1",
+
+        "PATHWEB": "RP/INDEX/RU/Home",
+        "searchAdd": "",
+        "search1": "",
+        "entryBarCode": "",
+        "PATHPAGE": "RP/INDEX/RU/Home/Search",
     }
 
     def __init__(self):
@@ -116,8 +129,23 @@ class RussianPostQuery(object):
 
         req_data = urllib.urlencode(params)
 
-        handle = urllib2.urlopen(RussianPostQuery.query_url, req_data)
-        html = handle.read()    
+        request = urllib2.Request(RussianPostQuery.query_url, req_data, {
+            "Referer": "http://www.russianpost.ru/rp/servise/ru/home/postuslug/trackingpo",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.19 (KHTML, like Gecko)"
+                          " Ubuntu/12.04 Chromium/18.0.1025.168 Chrome/18.0.1025.168 Safari/535.19",
+            })
+        #handle = urllib2.build_opener(urllib2.HTTPHandler(debuglevel=1)).open(request)
+        handle = urllib2.urlopen(request)
+        html = handle.read()
+
+        if len(html) < 1000:
+            key =  self.parser.parse_keyform(html)
+            req_data = urllib.urlencode({"key": key})
+
+            handle = urllib2.urlopen(RussianPostQuery.query_url, req_data)
+            handle = urllib2.urlopen(RussianPostQuery.query_url)
+            html = handle.read()
+
         events = self.parser.parse(html, barcode)
             
         return events
