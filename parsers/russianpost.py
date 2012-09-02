@@ -4,6 +4,7 @@ import html5lib
 import datetime
 import urllib2
 import urllib
+import cookielib
 import zlib
 import sys
 import re
@@ -88,8 +89,35 @@ class RussianPostParser(object):
             namespaces={'html': 'http://www.w3.org/1999/xhtml'})[0].attrib['value']
 
 
+class RussianPostBrowser(object):
+
+    def __init__(self):
+        self._last_response = None
+        self._cookieJar = cookielib.CookieJar()
+        self.verbose = False
+
+    def open(self, query_url, req_data=None):
+        request = urllib2.Request(
+                query_url,
+                req_data,
+                {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.19 (KHTML, like Gecko)"
+                               " Ubuntu/12.04 Chromium/18.0.1025.168 Chrome/18.0.1025.168 Safari/535.19"})
+        if self._last_response:
+            request.add_header("Referer", self._last_response.geturl())
+            self._cookieJar.extract_cookies(self._last_response, request)
+
+        if self.verbose:
+            handle = urllib2.build_opener(urllib2.HTTPHandler(debuglevel=1)).open(request)
+        else:
+            handle = urllib2.urlopen(request)
+
+        self._last_response = handle
+        return handle
+
+
 class RussianPostQuery(object):
 
+    form_url = "http://www.russianpost.ru/rp/servise/ru/home/postuslug/trackingpo"
     query_url = "http://www.russianpost.ru/resp_engine.aspx?Path=rp/servise/ru/home/postuslug/trackingpo"
     default_query_params = {
         "OP": "",
@@ -119,6 +147,10 @@ class RussianPostQuery(object):
         self.parser = RussianPostParser()
 
     def query(self, barcode):
+        browser = RussianPostBrowser()
+        #browser.verbose = True
+        browser.open(self.form_url)
+
         today = datetime.date.today()
 
         params = RussianPostQuery.default_query_params
@@ -129,20 +161,16 @@ class RussianPostQuery(object):
 
         req_data = urllib.urlencode(params)
 
-        request = urllib2.Request(RussianPostQuery.query_url, req_data, {
-            "Referer": "http://www.russianpost.ru/rp/servise/ru/home/postuslug/trackingpo",
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.19 (KHTML, like Gecko)"
-                          " Ubuntu/12.04 Chromium/18.0.1025.168 Chrome/18.0.1025.168 Safari/535.19",
-            })
-        #handle = urllib2.build_opener(urllib2.HTTPHandler(debuglevel=1)).open(request)
-        handle = urllib2.urlopen(request)
+        handle = browser.open(RussianPostQuery.query_url, req_data)
         html = handle.read()
 
         if len(html) < 1000:
+            #print >> sys.stderr, html
             key =  self.parser.parse_keyform(html)
             req_data = urllib.urlencode({"key": key})
 
             handle = urllib2.urlopen(RussianPostQuery.query_url, req_data)
+            #print >> sys.stderr, handle.read()
             handle = urllib2.urlopen(RussianPostQuery.query_url)
             html = handle.read()
 
