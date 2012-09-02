@@ -91,27 +91,23 @@ class RussianPostParser(object):
 
 class RussianPostBrowser(object):
 
-    def __init__(self):
-        self._last_response = None
-        self._cookieJar = cookielib.CookieJar()
-        self.verbose = False
+    _headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.19 (KHTML, like Gecko)"
+                              " Ubuntu/12.04 Chromium/18.0.1025.168 Chrome/18.0.1025.168 Safari/535.19"}
+
+    def __init__(self, verbose=False):
+        self.opener = urllib2.build_opener(
+              urllib2.HTTPCookieProcessor(cookielib.CookieJar()),
+              urllib2.HTTPHandler(debuglevel=int(verbose)))
+        self._last_url = None
 
     def open(self, query_url, req_data=None):
-        request = urllib2.Request(
-                query_url,
-                req_data,
-                {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.19 (KHTML, like Gecko)"
-                               " Ubuntu/12.04 Chromium/18.0.1025.168 Chrome/18.0.1025.168 Safari/535.19"})
-        if self._last_response:
-            request.add_header("Referer", self._last_response.geturl())
-            self._cookieJar.extract_cookies(self._last_response, request)
+        request = urllib2.Request(query_url, req_data, self._headers)
+        if self._last_url:
+            request.add_header("Referer", self._last_url)
 
-        if self.verbose:
-            handle = urllib2.build_opener(urllib2.HTTPHandler(debuglevel=1)).open(request)
-        else:
-            handle = urllib2.urlopen(request)
+        handle =  self.opener.open(request)
 
-        self._last_response = handle
+        self._last_url = handle.geturl()
         return handle
 
 
@@ -147,9 +143,19 @@ class RussianPostQuery(object):
         self.parser = RussianPostParser()
 
     def query(self, barcode):
-        browser = RussianPostBrowser()
-        #browser.verbose = True
-        browser.open(self.form_url)
+        browser = RussianPostBrowser(verbose=False)
+
+        handle = browser.open(self.form_url)
+        html = handle.read()
+        if len(html) < 1000:
+            #print >> sys.stderr, html
+            key =  self.parser.parse_keyform(html)
+            req_data = urllib.urlencode({"key": key})
+
+            handle = browser.open(RussianPostQuery.query_url, req_data)
+            #print >> sys.stderr, handle.read()
+            handle = browser.open(RussianPostQuery.query_url)
+            html = handle.read()
 
         today = datetime.date.today()
 
@@ -163,16 +169,6 @@ class RussianPostQuery(object):
 
         handle = browser.open(RussianPostQuery.query_url, req_data)
         html = handle.read()
-
-        if len(html) < 1000:
-            #print >> sys.stderr, html
-            key =  self.parser.parse_keyform(html)
-            req_data = urllib.urlencode({"key": key})
-
-            handle = urllib2.urlopen(RussianPostQuery.query_url, req_data)
-            #print >> sys.stderr, handle.read()
-            handle = urllib2.urlopen(RussianPostQuery.query_url)
-            html = handle.read()
 
         events = self.parser.parse(html, barcode)
             
